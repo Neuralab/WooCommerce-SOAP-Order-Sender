@@ -3,7 +3,7 @@
  * Plugin Name: WooCommerce SOAP Order Sender
  * Description: Sends WooCommerce order data to an external SOAP service.
  * Version: 1.0
- * Author: Your Name
+ * Author: Neuralab
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -44,10 +44,33 @@ function send_order_to_soap_service( $order_id, $old_status, $new_status ) {
  * @return array
  */
 function prepare_order_data_for_soap( $order ) {
-    // Extract and format the order data for SOAP request
-    // ...
+    $nalogZaglavlje = array(
+        'vanjskiIdentifikator' => $order->get_order_number(),
+        'OIB'                 => /* OIB kupca, ako je dostupan */,
+        'imeKupcaNaplata'     => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+        'adresaNaplata'       => $order->get_billing_address_1(),
+        // Slično popunite ostale podatke za naplatu i dostavu
+        'ukupniIznos'         => $order->get_total(),
+        'nacinPlacanja'       => /* Kodirani način plaćanja, prilagodite vašem sustavu */
+        // Dodajte ostale potrebne podatke
+    );
 
-    return $formatted_order_data;
+    $nalogStavke = array();
+    foreach ( $order->get_items() as $item_id => $item ) {
+        $product = $item->get_product();
+        $nalogStavka = array(
+            'sifraProizvoda'    => $product->get_sku(),
+            'tipProizvoda'      => /* U (usluga) ili A (artikl), ovisno o proizvodu */,
+            'kolicina'          => $item->get_quantity(),
+            'maloprodajnaCijena'=> $item->get_subtotal()
+        );
+        $nalogStavke[] = $nalogStavka;
+    }
+
+    return array(
+        'NalogZaglavlje' => $nalogZaglavlje,
+        'NalogStavke'    => $nalogStavke
+    );
 }
 
 /**
